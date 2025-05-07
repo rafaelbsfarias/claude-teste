@@ -7,33 +7,33 @@ if (!defined('ABSPATH')) {
 require_once ASAAS_PLUGIN_DIR . 'includes/class-form-processor.php';
 
 /**
- * Registra os handlers AJAX - só executa depois que o WordPress estiver completamente carregado
+ * Registra os handlers AJAX
  */
 function asaas_register_ajax_handler() {
-    // Verifique se estamos em uma requisição AJAX do Elementor e trate de forma diferente
-    if (defined('DOING_AJAX') && DOING_AJAX && isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'elementor') !== false) {
-        // Não faça nada especial para requisições do Elementor
-        return;
-    }
-    
-    // Registre as ações para processamento de doação para outros contextos
+    // Register normal AJAX handlers for your plugin's actions
     add_action('wp_ajax_process_donation_form', 'asaas_process_donation');
     add_action('wp_ajax_nopriv_process_donation_form', 'asaas_process_donation');
-    
     add_action('wp_ajax_process_donation', 'asaas_process_donation');
     add_action('wp_ajax_nopriv_process_donation', 'asaas_process_donation');
+    
+    error_log('ASAAS: AJAX handlers registered');
 }
-// Use 'init' com prioridade após scripts e estilos serem registrados
-add_action('init', 'asaas_register_ajax_handler', 30);
+// Use a later priority to ensure Elementor has already registered its handlers
+add_action('init', 'asaas_register_ajax_handler', 99);
 
 /**
  * Processa o formulário de doação
  */
 function asaas_process_donation() {
-    error_log('ASAAS: Requisição AJAX recebida: ' . print_r($_POST, true));
+    // Add debugging
+    error_log('ASAAS: Processing donation via AJAX: ' . json_encode($_POST));
     
-    // Verifique se estamos em uma requisição AJAX do Elementor e aborte
-    if (defined('DOING_AJAX') && DOING_AJAX && isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'elementor') !== false) {
+    // Avoid processing in Elementor's preview mode
+    if (isset($_POST['editor_post_id']) || 
+        (defined('DOING_AJAX') && DOING_AJAX && 
+         isset($_REQUEST['action']) && 
+         strpos($_REQUEST['action'], 'elementor') !== false)) {
+        wp_send_json_success(['status' => 'preview_mode']);
         return;
     }
     
