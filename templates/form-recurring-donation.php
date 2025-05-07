@@ -47,6 +47,10 @@
             <label for="phone">Telefone:</label>
             <input type="text" id="phone" name="phone" placeholder="DDD + número" required>
         </div>
+        <div class="asaas-honeypot" style="position:absolute; left:-9999px;">
+            <label for="website">Website</label>
+            <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+        </div>
 
         <button type="submit" id="submit-recurring-donation">Realizar Doação</button>
     </form>

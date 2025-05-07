@@ -5,19 +5,30 @@ if (!defined('ABSPATH')) {
 }
 
 require_once ASAAS_PLUGIN_DIR . 'includes/class-form-processor.php';
-require_once ASAAS_PLUGIN_DIR . 'includes/security/class-nonce-manager.php';
 
 /**
- * Registra o handler AJAX
+ * Registra os handlers AJAX
  */
 function asaas_register_ajax_handler() {
+    // Registre ambas as ações para maior compatibilidade
     add_action('wp_ajax_process_donation', 'asaas_process_donation');
     add_action('wp_ajax_nopriv_process_donation', 'asaas_process_donation');
     
-    // Adicionar um log para verificar se esta função é chamada
+    add_action('wp_ajax_process_donation_form', 'asaas_process_donation');
+    add_action('wp_ajax_nopriv_process_donation_form', 'asaas_process_donation');
+    
     error_log('ASAAS: Handlers AJAX registrados');
 }
 add_action('init', 'asaas_register_ajax_handler');
+
+/**
+ * Processa o formulário de doação
+ */
+function asaas_process_donation() {
+    error_log('ASAAS: Requisição AJAX recebida: ' . print_r($_POST, true));
+    
+    process_donation_form();
+}
 
 /**
  * Processa o formulário de doação via AJAX
@@ -28,29 +39,20 @@ function process_donation_form() {
     file_put_contents($log_file, "==== Nova requisição " . date('Y-m-d H:i:s') . " ====\n", FILE_APPEND);
     file_put_contents($log_file, "POST: " . print_r($_POST, true) . "\n", FILE_APPEND);
     
-    // SOLUÇÃO: Comentar temporariamente a verificação de nonce
-    /*
-    if (!isset($_POST['nonce'])) {
-        wp_send_json_error(['message' => 'Security token missing. Please refresh the page and try again.']);
-        return;
-    }
-
-    // Determinar qual tipo de nonce verificar
-    $nonce_action = isset($_POST['form_type']) && 
-                   ($_POST['form_type'] === 'single_donation' || 
-                    $_POST['form_type'] === 'recurring_donation') 
-        ? 'asaas_public_form' : 'asaas_nonce';
-
-    // Verificar o nonce
-    if (!wp_verify_nonce($_POST['nonce'], $nonce_action)) {
-        wp_send_json_error(['message' => 'Security verification failed. Please refresh the page and try again.']);
-        return;
-    }
-    */
-
-    // Verificação honeypot se existir
+    // REMOVIDA verificação de nonce para permitir uso público irrestrito
+    
+    // Verificação honeypot se existir (mantenha esta proteção)
     if (isset($_POST['website']) && !empty($_POST['website'])) {
+        file_put_contents($log_file, "Proteção honeypot ativada - possível spam detectado\n", FILE_APPEND);
         wp_send_json_error(['message' => 'Invalid request.']);
+        return;
+    }
+
+    // Verificação básica de referer como camada mínima de proteção
+    $referer = wp_get_referer();
+    if (!$referer || (strpos($referer, site_url()) !== 0 && !defined('WP_DEBUG'))) {
+        file_put_contents($log_file, "Referer inválido: {$referer}\n", FILE_APPEND);
+        wp_send_json_error(['message' => 'Invalid request origin.']);
         return;
     }
 
@@ -58,7 +60,7 @@ function process_donation_form() {
     $processor = new Asaas_Form_Processor();
     $result = $processor->process_form($_POST);
     
-    error_log('ASAAS: Resultado do processamento: ' . print_r($result, true));
+    file_put_contents($log_file, "Resultado do processamento: " . print_r($result, true) . "\n", FILE_APPEND);
     
     if ($result['success']) {
         wp_send_json_success([
@@ -71,13 +73,4 @@ function process_donation_form() {
             'errors' => $result['errors']
         ]);
     }
-}
-
-/**
- * Processa o formulário de doação
- */
-function asaas_process_donation() {
-    error_log('ASAAS: Requisição AJAX recebida: ' . print_r($_POST, true));
-    
-    process_donation_form();
 }

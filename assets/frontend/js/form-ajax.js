@@ -7,90 +7,68 @@
     'use strict';
     
     /**
-     * Processa o envio do formulário de doação via AJAX
-     * 
-     * @param {HTMLFormElement} form Formulário a ser processado
-     * @param {string} loadingMessage Mensagem de carregamento
+     * Processa o envio do formulário de doação
      */
-    function processDonationForm(form, loadingMessage) {
-        // Adicionar mensagem de carregamento
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton ? submitButton.textContent : 'Enviar';
+    function processDonationForm(form) {
+        // Mostrar indicador de carregamento
+        const loadingElement = document.createElement('div');
+        loadingElement.className = 'asaas-loading';
+        loadingElement.textContent = 'Processando sua doação...';
+        form.appendChild(loadingElement);
         
+        // Desabilitar o botão de envio
+        const submitButton = form.querySelector('button[type="submit"]');
         if (submitButton) {
-            submitButton.textContent = loadingMessage;
             submitButton.disabled = true;
         }
-        
-        // Limpar mensagens anteriores
-        AsaasFormUtils.clearMessages(form);
         
         // Obter todos os campos do formulário
         const formData = new FormData(form);
         
-        try {
-            // Verificar se ajax_object existe
-            if (typeof ajax_object === 'undefined') {
-                throw new Error('ajax_object não está definido');
+        // Enviar para o backend via AJAX
+        fetch(ajax_object.ajax_url, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(response => {
+            // Remover indicador de carregamento
+            if (loadingElement.parentNode) {
+                loadingElement.parentNode.removeChild(loadingElement);
             }
             
-            // Enviar para o backend via AJAX
-            fetch(ajax_object.ajax_url, {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(response => {
-                // Restaurar o botão
-                if (submitButton) {
-                    submitButton.textContent = originalButtonText;
-                    submitButton.disabled = false;
-                }
-                
-                if (response.success) {
-                    // Usar a mesma função de exibição de sucesso para ambos os tipos de doação
-                    const donationType = form.id === 'recurring-donation-form' ? 'recurring' : 'single';
-                    showDonationSuccess(form, response.data, donationType);
-                } else {
-                    // Mostrar mensagem de erro
-                    let errorMessage = 'Ocorreu um erro ao processar sua doação.';
-                    
-                    if (response.data) {
-                        if (response.data.errors) {
-                            if (typeof response.data.errors === 'object') {
-                                errorMessage = Object.values(response.data.errors).join('<br>');
-                            } else {
-                                errorMessage = response.data.errors;
-                            }
-                        } else if (response.data.message) {
-                            errorMessage = response.data.message;
-                        }
-                    }
-                    
-                    showMessage(form, errorMessage, 'error');
-                }
-            })
-            .catch(error => {
-                // Restaurar o botão
-                if (submitButton) {
-                    submitButton.textContent = originalButtonText;
-                    submitButton.disabled = false;
-                }
-                
-                // Mostrar mensagem de erro com rolagem automática
-                showMessage(form, 'Erro de conexão. Por favor, tente novamente.', 'error');
-            });
-        } catch (error) {
-            // Restaurar o botão
+            // Reativar o botão de envio
             if (submitButton) {
-                submitButton.textContent = originalButtonText;
                 submitButton.disabled = false;
             }
             
-            // Mostrar mensagem de erro
-            showMessage(form, 'Erro ao processar o formulário. Por favor, tente novamente.', 'error');
-        }
+            if (response.success) {
+                handleSuccessResponse(form, response.data);
+            } else {
+                handleErrorResponse(form, response.errors);
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao processar formulário:', error);
+            
+            // Remover indicador de carregamento
+            if (loadingElement.parentNode) {
+                loadingElement.parentNode.removeChild(loadingElement);
+            }
+            
+            // Reativar o botão de envio
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+            
+            // Exibir mensagem de erro genérica
+            handleErrorResponse(form, {
+                general: 'Erro ao processar o formulário. Por favor, tente novamente.'
+            });
+        });
+        
+        return false;
     }
     
     /**

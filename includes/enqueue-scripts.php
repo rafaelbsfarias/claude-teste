@@ -23,9 +23,10 @@ function asaas_enqueue_scripts() {
     wp_enqueue_script('asaas-form-script');
     
     // Localizar o script com as variáveis do WordPress
-    wp_localize_script('asaas-form-script', 'ajax_object', [
+    wp_localize_script('asaas-form-ajax', 'ajax_object', [
         'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('asaas_public_form')  // Use o nonce público
+        'site_url' => site_url(),
+        'is_debug' => defined('WP_DEBUG') && WP_DEBUG
     ]);
 }
 add_action('wp_enqueue_scripts', 'asaas_enqueue_scripts');

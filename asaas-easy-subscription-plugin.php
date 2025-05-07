@@ -44,3 +44,15 @@ function ensure_ajax_hooks() {
     add_action('wp_ajax_nopriv_process_donation_form', 'process_donation_form');
 }
 add_action('init', 'ensure_ajax_hooks');
+
+/**
+ * Registra os hooks AJAX diretamente no arquivo principal para garantir disponibilidade
+ */
+function asaas_register_direct_ajax_handlers() {
+    add_action('wp_ajax_process_donation_form', 'process_donation_form');
+    add_action('wp_ajax_nopriv_process_donation_form', 'process_donation_form');
+    
+    add_action('wp_ajax_process_donation', 'asaas_process_donation');
+    add_action('wp_ajax_nopriv_process_donation', 'asaas_process_donation');
+}
+add_action('init', 'asaas_register_direct_ajax_handlers', 20);
