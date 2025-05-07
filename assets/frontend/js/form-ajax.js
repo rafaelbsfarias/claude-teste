@@ -311,3 +311,209 @@
         showDonationSuccess
     };
 })();
+
+// Configurar os novos formulários V2
+jQuery(document).ready(function($) {
+    // Formulário de doação única V2
+    if ($('#asaas-single-donation-form').length) {
+        setupFormAjax('#asaas-single-donation-form');
+    }
+    
+    // Formulário de doação recorrente V2
+    if ($('#asaas-recurring-donation-form').length) {
+        setupFormAjax('#asaas-recurring-donation-form');
+    }
+    
+    // Função centralizada para configurar AJAX nos formulários
+    function setupFormAjax(formSelector) {
+        $(formSelector).on('submit', function(e) {
+            e.preventDefault();
+            
+            var $form = $(this);
+            var $submitButton = $form.find('button[type="submit"]');
+            
+            // Desabilitar o botão para evitar múltiplos envios
+            $submitButton.prop('disabled', true).text('Processando...');
+            
+            // Limpar mensagens de erro anteriores
+            $('.asaas-form-error').remove();
+            
+            // Coletar os dados do formulário
+            var formData = $form.serialize();
+            
+            // Enviar a requisição AJAX
+            $.ajax({
+                url: ajax_object.ajax_url,
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        // Redirecionar ou mostrar mensagem de sucesso
+                        if (response.data && response.data.redirect_url) {
+                            window.location.href = response.data.redirect_url;
+                        } else {
+                            $form.html('<div class="asaas-success-message">' + 
+                                       '<h3>Doação realizada com sucesso!</h3>' + 
+                                       '<p>Obrigado por sua contribuição.</p></div>');
+                        }
+                    } else {
+                        // Mostrar erros
+                        $submitButton.prop('disabled', false).text('Tentar Novamente');
+                        
+                        var errorMsg = 'Ocorreu um erro ao processar sua doação.';
+                        if (response.data && response.data.errors) {
+                            errorMsg = response.data.errors.join('<br>');
+                        }
+                        
+                        $form.prepend('<div class="asaas-form-error">' + errorMsg + '</div>');
+                    }
+                },
+                error: function() {
+                    $submitButton.prop('disabled', false).text('Tentar Novamente');
+                    $form.prepend('<div class="asaas-form-error">' + 
+                                 'Erro de conexão. Por favor, tente novamente.</div>');
+                }
+            });
+        });
+    }
+});
+
+// Adicione esta função ao arquivo existente, preservando o código atual
+(function($) {
+    $(document).ready(function() {
+        // Encontrar formulários
+        const singleForm = $('#asaas-single-donation-form');
+        const recurringForm = $('#asaas-recurring-donation-form');
+        
+        // Configurar ambos os formulários se existirem
+        if (singleForm.length) {
+            setupFormSubmission(singleForm);
+        }
+        
+        if (recurringForm.length) {
+            setupFormSubmission(recurringForm);
+        }
+        
+        // Função para configurar o envio do formulário
+        function setupFormSubmission(form) {
+            form.on('submit', function(e) {
+                e.preventDefault();
+                
+                const submitButton = form.find('button[type="submit"]');
+                submitButton.prop('disabled', true).text('Processando...');
+                
+                // Limpar mensagens anteriores
+                form.find('.asaas-response').remove();
+                
+                $.ajax({
+                    url: ajax_object.ajax_url,
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(response) {
+                        if (response.success) {
+                            // Mostrar mensagem de sucesso e informações de pagamento
+                            displayPaymentResponse(form, response.data);
+                        } else {
+                            // Mostrar erro
+                            displayErrorMessage(form, response.data?.errors || ['Erro ao processar pagamento.']);
+                            submitButton.prop('disabled', false).text('Tentar Novamente');
+                        }
+                    },
+                    error: function() {
+                        displayErrorMessage(form, ['Erro de conexão. Por favor, tente novamente.']);
+                        submitButton.prop('disabled', false).text('Tentar Novamente');
+                    }
+                });
+            });
+        }
+        
+        // Função para exibir a resposta do pagamento
+        function displayPaymentResponse(form, data) {
+            // Criar container de resposta
+            const responseContainer = $('<div class="asaas-response"></div>');
+            
+            // Adicionar mensagem de sucesso
+            responseContainer.append(`
+                <div class="asaas-success-message">
+                    <h3>Doação realizada com sucesso!</h3>
+                    <p>Obrigado por sua contribuição.</p>
+                </div>
+            `);
+            
+            // Verificar o método de pagamento
+            if (data.payment_method === 'pix') {
+                // Exibir QR Code PIX
+                responseContainer.append(`
+                    <div class="asaas-pix-container">
+                        <h4>Pagamento via PIX</h4>
+                        <p>Escaneie o QR Code abaixo ou copie o código PIX:</p>
+                        <div class="asaas-pix-qrcode">
+                            <img src="data:image/png;base64,${data.pix_code}" alt="QR Code PIX">
+                        </div>
+                        <div class="asaas-pix-text">
+                            <p>Código PIX:</p>
+                            <div class="asaas-pix-copy">
+                                <input type="text" readonly value="${data.pix_text}">
+                                <button class="asaas-copy-button" data-clipboard="${data.pix_text}">Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                // Adicionar listener para o botão de cópia
+                setTimeout(() => {
+                    $('.asaas-copy-button').on('click', function() {
+                        const text = $(this).data('clipboard');
+                        navigator.clipboard.writeText(text).then(() => {
+                            $(this).text('Copiado!');
+                            setTimeout(() => {
+                                $(this).text('Copiar');
+                            }, 2000);
+                        });
+                    });
+                }, 100);
+            } else if (data.payment_method === 'boleto') {
+                // Exibir link para boleto
+                responseContainer.append(`
+                    <div class="asaas-boleto-container">
+                        <h4>Pagamento via Boleto</h4>
+                        <p>Clique no botão abaixo para visualizar ou imprimir seu boleto:</p>
+                        <a href="${data.bank_slip_url}" class="asaas-boleto-button" target="_blank">
+                            Visualizar Boleto
+                        </a>
+                    </div>
+                `);
+            } else if (data.payment_method === 'card') {
+                // Exibir confirmação de pagamento com cartão
+                responseContainer.append(`
+                    <div class="asaas-card-container">
+                        <h4>Pagamento com Cartão de Crédito</h4>
+                        <p>Seu pagamento foi processado com sucesso!</p>
+                        <p>ID de pagamento: ${data.payment_id}</p>
+                    </div>
+                `);
+            }
+            
+            // Substituir o formulário pela resposta
+            form.html(responseContainer);
+        }
+        
+        // Função para exibir mensagens de erro
+        function displayErrorMessage(form, errors) {
+            const errorContainer = $('<div class="asaas-form-error"></div>');
+            
+            if (Array.isArray(errors) && errors.length) {
+                const errorList = $('<ul></ul>');
+                errors.forEach(error => {
+                    errorList.append(`<li>${error}</li>`);
+                });
+                errorContainer.append(errorList);
+            } else {
+                errorContainer.text('Ocorreu um erro ao processar sua doação.');
+            }
+            
+            // Inserir no topo do formulário
+            form.prepend(errorContainer);
+        }
+    });
+})(jQuery);
