@@ -21,7 +21,7 @@ if (class_exists('Asaas_API_Conn')) {
         $payment_data = [
             'customer' => $customer_id,
             'billingType' => 'PIX',
-            'value' => 19.00,
+            'value' => 10.00,
             'dueDate' => date('Y-m-d')
         ];
         

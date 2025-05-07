@@ -5,44 +5,47 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Handles nonce creation and verification
+ * Gerencia a criação e validação de nonces no plugin
  */
-class Nonce_Manager {
-
+class Asaas_Nonce_Manager {
     /**
-     * Creates a nonce for public forms
+     * Prefixo para todas as ações de nonce do plugin
      */
-    public static function create_public_nonce() {
-        return wp_create_nonce('asaas_public_form');
+    const NONCE_PREFIX = 'asaas_easy_subscription_';
+    
+    /**
+     * Ação para doação única
+     */
+    const ACTION_SINGLE_DONATION = 'single_donation';
+    
+    /**
+     * Ação para doação recorrente
+     */
+    const ACTION_RECURRING_DONATION = 'recurring_donation';
+    
+    /**
+     * Gera um campo de nonce para um formulário
+     *
+     * @param string $action Ação do formulário
+     * @param bool $echo Se deve imprimir ou retornar
+     * @return string|void HTML do campo nonce
+     */
+    public static function generate_nonce_field($action, $echo = true) {
+        return wp_nonce_field(self::NONCE_PREFIX . $action, 'asaas_nonce', false, $echo);
     }
     
     /**
-     * Verifies a nonce for public forms
-     * More permissive for public users to handle Elementor integration
+     * Verifica se um nonce é válido
+     *
+     * @param array $data Dados do formulário ou requisição
+     * @param string $action Ação a ser verificada
+     * @return bool Se o nonce é válido
      */
-    public static function verify_public_nonce($nonce) {
-        // Log for debugging
-        error_log("ASAAS: Verifying nonce: {$nonce}");
-        
-        // Standard WordPress verification
-        $result = wp_verify_nonce($nonce, 'asaas_public_form');
-        if ($result) {
-            return true;
+    public static function verify_nonce($data, $action) {
+        if (!isset($data['asaas_nonce'])) {
+            return false;
         }
         
-        // For testing, accept a hardcoded test nonce
-        if ($nonce === 'teste123' && defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("ASAAS: Using test nonce");
-            return true;
-        }
-        
-        // Special handling for Elementor preview
-        if (isset($_POST['editor_post_id']) || isset($_GET['elementor-preview'])) {
-            error_log("ASAAS: Elementor context detected, bypassing nonce check");
-            return true;
-        }
-        
-        error_log("ASAAS: Nonce verification failed");
-        return false;
+        return wp_verify_nonce($data['asaas_nonce'], self::NONCE_PREFIX . $action);
     }
 }

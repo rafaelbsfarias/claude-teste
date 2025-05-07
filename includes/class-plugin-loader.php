@@ -6,18 +6,16 @@ if (!defined('ABSPATH')) {
 
 class Asaas_Plugin_Loader {
     public function init() {
-        // Carregar arquivos do painel administrativo       
+        // Carregar arquivos do painel administrativo.       
+        
         if (is_admin()) {
             require_once ASAAS_PLUGIN_DIR . 'admin/class-admin-settings.php';
             require_once ASAAS_PLUGIN_DIR . 'admin/class-admin-menu.php';                        
-        } else {
-            // Carregar configurações mesmo quando não estiver no admin
-            require_once ASAAS_PLUGIN_DIR . 'admin/class-admin-settings.php';
         }
 
         require_once ASAAS_PLUGIN_DIR . 'includes/enqueue-scripts.php';
         require_once ASAAS_PLUGIN_DIR . 'includes/shortcodes.php';
         require_once ASAAS_PLUGIN_DIR . 'includes/class-asaas-api.php';
-        require_once ASAAS_PLUGIN_DIR . 'includes/ajax-handler.php';
+        require_once ASAAS_PLUGIN_DIR . 'includes/ajax-handler.php'; 
     }
 }

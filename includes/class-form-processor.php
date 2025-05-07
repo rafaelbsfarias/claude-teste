@@ -13,29 +13,6 @@ require_once ASAAS_PLUGIN_DIR . 'includes/class-asaas-api.php';
 class Asaas_Form_Processor {
     /**
      * Processa dados do formulário
-     *
-     * @param array $form_data Dados do formulário
-     * @param string $form_type Tipo de formulário ('single' ou 'recurring')
-     * @return array Resultado do processamento
-     */
-    public function process($form_data, $form_type) {
-        // SOLUÇÃO: Comentar temporariamente a verificação de nonce
-        /*
-        // Verificar nonce
-        if (!isset($form_data['nonce']) || !Nonce_Manager::verify_nonce($form_data['nonce'], 'asaas_nonce')) {
-            return [
-                'success' => false,
-                'message' => 'Security verification failed. Please refresh the page and try again.'
-            ];
-        }
-        */
-
-        // Continuar com o processamento...
-        // Código existente continua aqui
-    }
-
-    /**
-     * Processa dados do formulário
      * 
      * @param array $form_data Dados do formulário
      * @return array Resultado do processamento

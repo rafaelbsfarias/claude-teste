@@ -5,11 +5,10 @@
     <p>Preencha as informações abaixo para cadastrar uma doação mensal. Fique tranquilo, essa modalidade de doação não ocupa o limite do seu cartão de credito.</p>
 
     <form id="recurring-donation-form">
-        <input type="hidden" name="action" value="process_donation_form">
+        <input type="hidden" name="action" value="process_donation">
         <input type="hidden" name="donation_type" value="<?php echo esc_attr($form_data['form_type']); ?>">
         
-        <input type="hidden" name="nonce" value="<?php echo Nonce_Manager::create_public_nonce(); ?>">
-        <input type="hidden" name="form_type" value="recurring_donation">
+        <?php Asaas_Nonce_Manager::generate_nonce_field($form_data['nonce_action']); ?>
         
         <label for="full-name">Nome Completo:</label>
         <input type="text" id="full-name" name="full_name" maxlength="50" placeholder="Coloque seu nome aqui" required>
@@ -46,10 +45,6 @@
             
             <label for="phone">Telefone:</label>
             <input type="text" id="phone" name="phone" placeholder="DDD + número" required>
-        </div>
-        <div class="asaas-honeypot" style="position:absolute; left:-9999px;">
-            <label for="website">Website</label>
-            <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
         </div>
 
         <button type="submit" id="submit-recurring-donation">Realizar Doação</button>

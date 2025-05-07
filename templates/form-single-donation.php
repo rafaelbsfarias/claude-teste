@@ -2,9 +2,10 @@
     <h2>Doação</h2>
     <p>Preencha as informações abaixo para realizar sua doação.</p>
     <form id="single-donation-form">
-        <input type="hidden" name="action" value="process_donation_form">
-        <input type="hidden" name="form_type" value="single_donation">
+        <input type="hidden" name="action" value="process_donation">
+        <input type="hidden" name="donation_type" value="<?php echo esc_attr($form_data['form_type']); ?>">
         
+        <?php Asaas_Nonce_Manager::generate_nonce_field($form_data['nonce_action']); ?>
         <label for="full-name">Nome Completo:</label>
         <input type="text" id="full-name" name="full_name" maxlength="50" placeholder="Coloque seu nome aqui" required>
 
@@ -49,12 +50,6 @@
             <input type="text" id="phone" name="phone" placeholder="Somente números" required>
         </div>
 
-        <div class="asaas-honeypot" style="position:absolute; left:-9999px;">
-            <label for="website">Website</label>
-            <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
-        </div>
-
         <button type="submit">Realizar Doação</button>
-    </form>
     </form>
 </div>
