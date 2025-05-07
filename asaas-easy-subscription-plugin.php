@@ -28,31 +28,9 @@ function asaas_easy_subscription_plugin_init() {
 }
 add_action('plugins_loaded', 'asaas_easy_subscription_plugin_init');
 
-// Verifique se os hooks de AJAX estão registrados corretamente:
-add_action('wp_ajax_process_donation_form', 'process_donation_form');
-add_action('wp_ajax_nopriv_process_donation_form', 'process_donation_form'); // Importante para usuários deslogados
-
 // Função de teste AJAX
 function asaas_test_ajax() {
     wp_send_json_success(['message' => 'AJAX working for public users']);
 }
 add_action('wp_ajax_asaas_test_ajax', 'asaas_test_ajax');
 add_action('wp_ajax_nopriv_asaas_test_ajax', 'asaas_test_ajax');
-
-function ensure_ajax_hooks() {
-    add_action('wp_ajax_process_donation_form', 'process_donation_form');
-    add_action('wp_ajax_nopriv_process_donation_form', 'process_donation_form');
-}
-add_action('init', 'ensure_ajax_hooks');
-
-/**
- * Registra os hooks AJAX diretamente no arquivo principal para garantir disponibilidade
- */
-function asaas_register_direct_ajax_handlers() {
-    add_action('wp_ajax_process_donation_form', 'process_donation_form');
-    add_action('wp_ajax_nopriv_process_donation_form', 'process_donation_form');
-    
-    add_action('wp_ajax_process_donation', 'asaas_process_donation');
-    add_action('wp_ajax_nopriv_process_donation', 'asaas_process_donation');
-}
-add_action('init', 'asaas_register_direct_ajax_handlers', 20);

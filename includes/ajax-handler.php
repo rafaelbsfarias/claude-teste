@@ -7,25 +7,35 @@ if (!defined('ABSPATH')) {
 require_once ASAAS_PLUGIN_DIR . 'includes/class-form-processor.php';
 
 /**
- * Registra os handlers AJAX
+ * Registra os handlers AJAX - só executa depois que o WordPress estiver completamente carregado
  */
 function asaas_register_ajax_handler() {
-    // Registre ambas as ações para maior compatibilidade
-    add_action('wp_ajax_process_donation', 'asaas_process_donation');
-    add_action('wp_ajax_nopriv_process_donation', 'asaas_process_donation');
+    // Verifique se estamos em uma requisição AJAX do Elementor e trate de forma diferente
+    if (defined('DOING_AJAX') && DOING_AJAX && isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'elementor') !== false) {
+        // Não faça nada especial para requisições do Elementor
+        return;
+    }
     
+    // Registre as ações para processamento de doação para outros contextos
     add_action('wp_ajax_process_donation_form', 'asaas_process_donation');
     add_action('wp_ajax_nopriv_process_donation_form', 'asaas_process_donation');
     
-    error_log('ASAAS: Handlers AJAX registrados');
+    add_action('wp_ajax_process_donation', 'asaas_process_donation');
+    add_action('wp_ajax_nopriv_process_donation', 'asaas_process_donation');
 }
-add_action('init', 'asaas_register_ajax_handler');
+// Use 'init' com prioridade após scripts e estilos serem registrados
+add_action('init', 'asaas_register_ajax_handler', 30);
 
 /**
  * Processa o formulário de doação
  */
 function asaas_process_donation() {
     error_log('ASAAS: Requisição AJAX recebida: ' . print_r($_POST, true));
+    
+    // Verifique se estamos em uma requisição AJAX do Elementor e aborte
+    if (defined('DOING_AJAX') && DOING_AJAX && isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'elementor') !== false) {
+        return;
+    }
     
     process_donation_form();
 }
@@ -38,8 +48,6 @@ function process_donation_form() {
     $log_file = dirname(__FILE__, 2) . '/debug-ajax.log';
     file_put_contents($log_file, "==== Nova requisição " . date('Y-m-d H:i:s') . " ====\n", FILE_APPEND);
     file_put_contents($log_file, "POST: " . print_r($_POST, true) . "\n", FILE_APPEND);
-    
-    // REMOVIDA verificação de nonce para permitir uso público irrestrito
     
     // Verificação honeypot se existir (mantenha esta proteção)
     if (isset($_POST['website']) && !empty($_POST['website'])) {
