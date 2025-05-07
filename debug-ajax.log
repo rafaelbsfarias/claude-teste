@@ -1,0 +1,253 @@
+==== Nova requisição 2025-05-06 23:01:45 ====
+POST: Array
+(
+    [action] => process_donation_form
+    [nonce] => teste123
+    [form_type] => single_donation
+    [name] => Teste
+    [email] => teste@example.com
+    [cpf] => 12345678900
+    [donation_value] => 10,00
+    [payment_method] => pix
+)
+
+Nonce presente: teste123
+==== Nova requisição 2025-05-06 23:02:10 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 500,00
+    [payment_method] => pix
+    [card_number] => 
+    [expiry_month] => 
+    [expiry_year] => 
+    [ccv] => 
+    [cep] => 
+    [address_number] => 
+    [phone] => 
+)
+
+Erro: Nonce ausente
+==== Nova requisição 2025-05-06 23:08:31 ====
+POST: Array
+(
+    [action] => process_donation_form
+    [nonce] => teste123
+    [form_type] => single_donation
+    [full_name] => Usuário Teste
+    [email] => teste@example.com
+    [cpf_cnpj] => 123.456.789-00
+    [phone] => (11) 98765-4321
+    [donation_value] => 10,00
+    [payment_method] => pix
+)
+
+Nonce presente: teste123
+==== Nova requisição 2025-05-06 23:08:57 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 10,00
+    [payment_method] => pix
+    [card_number] => 
+    [expiry_month] => 
+    [expiry_year] => 
+    [ccv] => 
+    [cep] => 
+    [address_number] => 
+    [phone] => 
+)
+
+Erro: Nonce ausente
+==== Nova requisição 2025-05-06 23:09:33 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => rafael
+    [email] => asd@asd.com
+    [cpf_cnpj] => 85932634537
+    [donation_value] => 10,00
+    [payment_method] => pix
+    [card_number] => 
+    [expiry_month] => 
+    [expiry_year] => 
+    [ccv] => 
+    [cep] => 
+    [address_number] => 
+    [phone] => 
+)
+
+Erro: Nonce ausente
+==== Nova requisição 2025-05-06 23:10:15 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 213,00
+    [payment_method] => pix
+    [card_number] => 
+    [expiry_month] => 
+    [expiry_year] => 
+    [ccv] => 
+    [cep] => 
+    [address_number] => 
+    [phone] => 
+)
+
+Erro: Nonce ausente
+==== Nova requisição 2025-05-06 23:13:18 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 500,00
+    [payment_method] => pix
+    [card_number] => 
+    [expiry_month] => 
+    [expiry_year] => 
+    [ccv] => 
+    [cep] => 
+    [address_number] => 
+    [phone] => 
+)
+
+==== Nova requisição 2025-05-06 23:13:36 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 500,00
+    [payment_method] => pix
+    [card_number] => 
+    [expiry_month] => 
+    [expiry_year] => 
+    [ccv] => 
+    [cep] => 
+    [address_number] => 
+    [phone] => 
+)
+
+==== Nova requisição 2025-05-06 23:14:14 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => recurring
+    [asaas_nonce] => 4e081170e7
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 500,00
+    [payment_method] => card
+    [card_number] => 44308824010
+    [expiry_month] => 12
+    [expiry_year] => 2030
+    [ccv] => 13
+    [cep] => 40070100
+    [address_number] => 123
+    [phone] => 71991781013
+)
+
+==== Nova requisição 2025-05-06 23:14:22 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => recurring
+    [asaas_nonce] => 4e081170e7
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 500,00
+    [payment_method] => card
+    [card_number] => 44308824010
+    [expiry_month] => 12
+    [expiry_year] => 2030
+    [ccv] => 132
+    [cep] => 40070100
+    [address_number] => 123
+    [phone] => 71991781013
+)
+
+==== Nova requisição 2025-05-06 23:14:41 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => recurring
+    [asaas_nonce] => 4e081170e7
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 500,00
+    [payment_method] => card
+    [card_number] => 5153582960706340
+    [expiry_month] => 12
+    [expiry_year] => 2030
+    [ccv] => 132
+    [cep] => 40070100
+    [address_number] => 123
+    [phone] => 71991781013
+)
+
+==== Nova requisição 2025-05-06 23:15:04 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => asd
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 50,00
+    [payment_method] => boleto
+    [card_number] => 
+    [expiry_month] => 
+    [expiry_year] => 
+    [ccv] => 
+    [cep] => 
+    [address_number] => 
+    [phone] => 
+)
+
+==== Nova requisição 2025-05-06 23:15:39 ====
+POST: Array
+(
+    [action] => process_donation
+    [donation_type] => single
+    [asaas_nonce] => 337ecd7116
+    [full_name] => rafael b s farias
+    [email] => asd@example.com
+    [cpf_cnpj] => 52821770057
+    [donation_value] => 50,00
+    [payment_method] => card
+    [card_number] => 5153582960706340
+    [expiry_month] => 12
+    [expiry_year] => 2030
+    [ccv] => 123
+    [cep] => 40070100
+    [address_number] => 123
+    [phone] => 71991781013
+)
+
