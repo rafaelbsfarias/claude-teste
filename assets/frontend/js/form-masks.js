@@ -1,144 +1,276 @@
-/*
+/* 
  * form-masks.js
  *
  * Máscaras e formatação de campos:
  *  - Máscara monetária (R$ 1.234,56)
  *  - Máscara dinâmica de CPF/CNPJ
+ *  - Máscara de número de cartão (xxxx xxxx xxxx xxxx)
+ *  - Máscara de telefone brasileiro ((xx) 9 xxxx-xxxx ou (xx) xxxx-xxxx)
+ *  - Máscara de CEP (xx.xxx-xxx)
  */
 (function() {
-    'use strict';
+  'use strict';
+
+  /**
+   * Formata um valor como moeda (R$ 1.234,56)
+   * @param {string|number} value
+   * @returns {string}
+   */
+  function formatCurrency(value) {
+    const num = parseFloat(value);
+    if (isNaN(num)) {
+      return '';
+    }
+    let formatted = num.toFixed(2).replace('.', ',');
+    const parts = formatted.split(',');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return parts.join(',');
+  }
+
+  // --- Helper Functions ---
+
+  /**
+   * Configura atributos comuns para campos de entrada numérica.
+   * @param {HTMLInputElement} field O elemento do campo.
+   * @param {object} options Opções como maxLength.
+   */
+  function configureNumericInput(field, options = {}) {
+    field.setAttribute('inputmode', 'numeric');
+    if (options.maxLength) {
+      field.setAttribute('maxlength', options.maxLength);
+    }
+  }
+
+  /**
+   * Manipula o evento keydown para restringir a entrada a dígitos e teclas permitidas.
+   * @param {KeyboardEvent} event O evento de teclado.
+   * @param {object} options Opções como allowPaste e allowCopyCutSelectAll.
+   */
+  function handleNumericKeyDown(event, options = { allowPaste: false, allowCopyCutSelectAll: true }) {
+    const key = event.key;
+    const isCtrlOrMeta = event.ctrlKey || event.metaKey;
+
+    if (options.allowPaste && isCtrlOrMeta && key.toLowerCase() === 'v') {
+      return; // Permitir colar
+    }
+    if (options.allowCopyCutSelectAll && isCtrlOrMeta && ['c', 'x', 'a'].includes(key.toLowerCase())) {
+      return; // Permitir copiar, recortar, selecionar tudo
+    }
+
+    const allowedNavigationKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
+    if (allowedNavigationKeys.includes(key)) {
+      return; // Permitir teclas de navegação/edição
+    }
+
+    // Bloquear se não for um dígito (considerando teclas como Shift, Alt, etc., que não são dígitos mas têm length > 1 ou são especiais)
+    if (!/\d/.test(key) || key.length > 1) {
+        // Permitir teclas modificadoras sozinhas (Ctrl, Alt, Shift, Meta)
+        if (!['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+             event.preventDefault();
+        }
+    }
+  }
+
+  /**
+   * Adiciona um listener ao evento de submit do formulário para limpar o valor do campo.
+   * @param {HTMLInputElement} field O elemento do campo.
+   * @param {RegExp} cleaningRegex A expressão regular para limpar o valor.
+   */
+  function addSubmitCleanup(field, cleaningRegex) {
+    if (field.form) {
+      field.form.addEventListener('submit', function() {
+        field.value = field.value.replace(cleaningRegex, '');
+      });
+    }
+  }
   
-    /**
-     * Formata um valor como moeda (R$ 1.234,56)
-     * @param {string|number} value
-     * @returns {string}
-     */
-    function formatCurrency(value) {
-      const num = parseFloat(value);
-      if (isNaN(num)) {
-        return '';
+  /**
+   * Formata o valor do campo monetário nos eventos focus e blur.
+   * @param {HTMLInputElement} field O elemento do campo.
+   * @param {boolean} isBlurEvent Indica se o evento é blur (para limpar o campo se inválido).
+   */
+  function _formatMoneyFieldOnFocusBlur(field, isBlurEvent) {
+    if (field.value) {
+      let v = field.value.replace(/\D/g, '');
+      if (v) {
+        v = (parseInt(v, 10) / 100).toFixed(2);
+        field.value = formatCurrency(v);
+      } else if (isBlurEvent) {
+        field.value = '';
       }
-      // duas casas com vírgula
-      let formatted = num.toFixed(2).replace('.', ',');
-      // separador de milhares
-      return formatted.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      // Se não for blur e v for vazio, o valor original (que não tinha dígitos) permanece.
+    } else if (isBlurEvent) {
+      field.value = ''; // Se já estiver vazio no blur, garante que permaneça vazio.
     }
-  
-    /**
-     * Formata um CPF ou CNPJ a partir de string de dígitos
-     * @param {string} value - somente dígitos
-     * @returns {string} formatado
-     */
-    function formatDocument(value) {
-      // Remove caracteres não numéricos
-      let v = value.replace(/\D/g, '');
-      
-      // Limita o tamanho máximo para 14 dígitos (CNPJ)
-      v = v.substring(0, 14);
-      
-      if (v.length <= 11) {
-        // CPF: 000.000.000-00
-        // Aplica a formatação em cada etapa da digitação
-        if (v.length > 9) {
-          v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
-        } else if (v.length > 6) {
-          v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
-        } else if (v.length > 3) {
-          v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
-        }
-      } else {
-        // CNPJ: 00.000.000/0000-00
-        // Aplica a formatação em cada etapa da digitação
-        if (v.length > 12) {
-          v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, '$1.$2.$3/$4-$5');
-        } else if (v.length > 8) {
-          v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, '$1.$2.$3/$4');
-        } else if (v.length > 5) {
-          v = v.replace(/^(\d{2})(\d{3})(\d{1,3})$/, '$1.$2.$3');
-        } else if (v.length > 2) {
-          v = v.replace(/^(\d{2})(\d{1,3})$/, '$1.$2');
-        }
-      }
-      
-      return v;
-    }
-  
-    /**
-     * Aplica máscara monetária aos campos de valor de doação
-     */
-    function applyMoneyMask() {
-      const fields = document.querySelectorAll('input[name="donation_value"]');
-      fields.forEach(field => {
-        field.addEventListener('input', () => {
-          const start = field.selectionStart;
-          const oldLen = field.value.length;
-          let v = field.value.replace(/\D/g, '');
-          if (!v) {
-            field.value = '';
-            return;
-          }
-          v = (parseInt(v, 10) / 100).toFixed(2);
-          field.value = formatCurrency(v);
-          const newLen = field.value.length;
-          field.setSelectionRange(start + (newLen - oldLen), start + (newLen - oldLen));
-        });
-        field.addEventListener('blur', () => {
-          let v = field.value.replace(/\D/g, '');
-          field.value = v ? formatCurrency((parseInt(v, 10) / 100).toFixed(2)) : '';
-        });
+  }
+
+  // --- Mask Application Functions ---
+
+  /**
+   * Aplica máscara monetária aos campos de valor de doação
+   */
+  function applyMoneyMask() {
+    const fields = document.querySelectorAll('input[name="donation_value"]');
+    fields.forEach(field => {
+      // A lógica de 'input' é complexa devido ao gerenciamento da posição do cursor e é mantida.
+      field.addEventListener('input', function(e) {
+        const start = this.selectionStart;
+        const length = this.value.length;
+        let v = this.value.replace(/\D/g, '');
+        // Se v for '', parseInt(v) é NaN. (NaN/100).toFixed(2) é "NaN". formatCurrency("NaN") retorna ''.
+        v = (parseInt(v, 10) / 100).toFixed(2);
+        this.value = formatCurrency(v);
+        const newLength = this.value.length;
+        // Ajusta a posição do cursor
+        const pos = start + (newLength - length);
+        this.setSelectionRange(pos, pos);
       });
-    }
-  
-    /**
-     * Inicializa máscaras de CPF/CNPJ via delegação de eventos
-     */
-    function initDocumentMasking() {
-      const selector = 'input[name="cpf_cnpj"], input.cpf-cnpj, input#cpf-cnpj';
-      // configura teclado numérico em mobile
-      document.addEventListener('focus', function(e) {
-        if (!e.target.matches(selector)) return;
-        e.target.setAttribute('inputmode', 'numeric');
-        e.target.setAttribute('pattern', '([0-9]{3}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9]{2})|([0-9]{2}\.?[0-9]{3}\.?[0-9]{3}\/?[0-9]{4}\-?[0-9]{2})');
-      }, true);
-      // bloqueio de teclas não numéricas
-      document.addEventListener('keydown', function(e) {
-        if (!e.target.matches(selector)) return;
-        const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab'];
-        if (!/\d/.test(e.key) && !allowed.includes(e.key)) {
-          e.preventDefault();
-        }
+
+      field.addEventListener('focus', function() {
+        _formatMoneyFieldOnFocusBlur(this, false);
       });
-      // aplica formatação no input (digitação ou colagem)
-      document.addEventListener('input', function(e) {
-        if (!e.target.matches(selector)) return;
-        e.target.value = formatDocument(e.target.value);
+      field.addEventListener('blur', function() {
+        _formatMoneyFieldOnFocusBlur(this, true);
       });
-      
-      // Adiciona evento para remover formatação antes do envio do formulário
-      document.addEventListener('submit', function(e) {
-        if (e.target.classList.contains('single-donation-form') || 
-            e.target.classList.contains('recurring-donation-form')) {
-          
-          const cpfCnpjField = e.target.querySelector(selector);
-          if (cpfCnpjField) {
-            // Armazena apenas os números antes do envio
-            cpfCnpjField.value = cpfCnpjField.value.replace(/\D/g, '');
-          }
-        }
-      });
-    }
-  
-    // inicia as máscaras após DOM carregar
-    document.addEventListener('DOMContentLoaded', function() {
-      applyMoneyMask();
-      initDocumentMasking();
     });
-  
-    // expõe publicamente
-    window.AsaasFormMasks = {
-      applyMoneyMask,
-      formatCurrency,
-      initDocumentMasking,
-      formatDocument
-    };
-  })();
+  }
+
+  /**
+   * Aplica máscara dinâmica de CPF ou CNPJ
+   * Submete apenas dígitos (remove pontuações no submit)
+   */
+  function applyDocumentMask() {
+    const fields = document.querySelectorAll('input[name="cpf_cnpj"], input.cpf-cnpj');
+    fields.forEach(field => {
+      configureNumericInput(field);
+      
+      field.addEventListener('keydown', function(e) {
+        handleNumericKeyDown(e, { allowPaste: true }); // Permitir colar, mantendo outros bloqueios
+      });
+      
+      field.addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '');
+        if (v.length <= 11) { // CPF
+          v = v
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        } else { // CNPJ
+          v = v.substr(0, 14) // Limita ao tamanho do CNPJ
+            .replace(/^(\d{2})(\d)/, '$1.$2')
+            .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+            .replace(/\.(\d{3})(\d)/, '.$1/$2')
+            .replace(/(\d{4})(\d)/, '$1-$2');
+        }
+        this.value = v;
+      });
+      
+      addSubmitCleanup(field, /\D/g);
+    });
+  }
+
+  /**
+   * Aplica máscara de número de cartão (xxxx xxxx xxxx xxxx)
+   * Submete apenas dígitos (remove espaços no submit)
+   */
+  function applyCardNumberMask() {
+    const fields = document.querySelectorAll('input[name="card_number"], input.cardNumber');
+    fields.forEach(field => {
+      configureNumericInput(field, { maxLength: '19' }); // 16 dígitos + 3 espaços
+      
+      field.addEventListener('keydown', function(e) {
+        handleNumericKeyDown(e, { allowPaste: true });
+      });
+      
+      field.addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '').substr(0, 16); // Pega até 16 dígitos
+        v = v.match(/.{1,4}/g)?.join(' ') || v; // Adiciona espaços a cada 4 dígitos
+        this.value = v;
+      });
+      
+      addSubmitCleanup(field, /\s+/g); // Remove apenas espaços no submit
+    });
+  }
+
+  /**
+   * Aplica máscara de telefone brasileiro (xx) 9 xxxx-xxxx ou (xx) xxxx-xxxx
+   * Submete apenas dígitos (remove formatação no submit)
+   */
+  function applyPhoneMask() {
+    const fields = document.querySelectorAll('input[name="phone"], input.phone');
+    fields.forEach(field => {
+      configureNumericInput(field, { maxLength: '16' }); // (xx) 9 xxxx-xxxx = 16 caracteres
+      
+      field.addEventListener('keydown', function(e) {
+        handleNumericKeyDown(e, { allowPaste: true });
+      });
+      
+      field.addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '');
+        v = v.substr(0, 11); // Limita a 11 dígitos (com o 9)
+        
+        // Aplica a formatação conforme digita
+        if (v.length > 10) { // Celular com 9 dígitos
+          v = v.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, '($1) $2 $3-$4');
+        } else if (v.length > 6) { // Telefone sem o 9
+          v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+        } else if (v.length > 2) { // Apenas DDD digitado
+          v = v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+        }
+        
+        this.value = v;
+      });
+      
+      addSubmitCleanup(field, /\D/g);
+    });
+  }
+
+  /**
+   * Aplica máscara de CEP no formato xx.xxx-xxx
+   * Submete apenas dígitos (remove formatação no submit)
+   */
+  function applyCepMask() {
+    const fields = document.querySelectorAll('input[name="cep"], input.cep, input#cep');
+    fields.forEach(field => {
+      configureNumericInput(field, { maxLength: '10' }); // xx.xxx-xxx = 10 caracteres
+      
+      field.addEventListener('keydown', function(e) {
+        handleNumericKeyDown(e, { allowPaste: true });
+      });
+      
+      field.addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '');
+        v = v.substr(0, 8); // Limita a 8 dígitos
+        
+        // Aplica a formatação xx.xxx-xxx
+        if (v.length > 5) {
+          v = v.replace(/^(\d{2})(\d{3})(\d{0,3})$/, '$1.$2-$3');
+        } else if (v.length > 2) {
+          v = v.replace(/^(\d{2})(\d{0,3})$/, '$1.$2');
+        }
+        
+        this.value = v;
+      });
+      
+      addSubmitCleanup(field, /\D/g);
+    });
+  }
+
+  // Expor para uso global
+  window.AsaasFormMasks = window.AsaasFormMasks || {};
+  window.AsaasFormMasks.applyMoneyMask = applyMoneyMask;
+  window.AsaasFormMasks.formatCurrency = formatCurrency;
+  window.AsaasFormMasks.applyDocumentMask = applyDocumentMask;
+  window.AsaasFormMasks.applyCardNumberMask = applyCardNumberMask;
+  window.AsaasFormMasks.applyPhoneMask = applyPhoneMask;
+  window.AsaasFormMasks.applyCepMask = applyCepMask; // Adicione esta linha
+
+  // Inicialização automática
+  document.addEventListener('DOMContentLoaded', function() {
+    applyMoneyMask();
+    applyDocumentMask();
+    applyCardNumberMask();
+    applyPhoneMask();
+    applyCepMask(); // Adicione esta linha
+  });
+})();

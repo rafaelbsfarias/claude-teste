@@ -26,7 +26,7 @@
         
         <div class="card-fields">
             <label for="card-number">Número do Cartão:</label>
-            <input type="text" id="card-number" name="card_number" maxlength="16" placeholder="Somente números" required>
+            <input type="text" id="card-number" name="card_number" maxlength="19" placeholder="Somente números" required>
 
             <label for="expiry-month">Mês de Validade:</label>
             <input type="text" id="expiry-month" name="expiry_month" maxlength="2" placeholder="MM" required>
