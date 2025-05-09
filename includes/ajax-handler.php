@@ -45,6 +45,13 @@ function asaas_process_donation() {
         
         error_log('ASAAS: Resultado do processamento: ' . print_r($result, true));
         
+        // Para pagamentos PIX, garantir que os dados necessários estejam presentes
+        if ($result['success'] && isset($_POST['payment_method']) && $_POST['payment_method'] === 'pix') {
+            if (!isset($result['data']['pix_code']) || !isset($result['data']['pix_text'])) {
+                error_log('ASAAS: Dados PIX ausentes na resposta bem-sucedida');
+            }
+        }
+        
         if ($result['success']) {
             wp_send_json_success([
                 'message' => __('Donation processed successfully', 'asaas-easy-subscription-plugin'),

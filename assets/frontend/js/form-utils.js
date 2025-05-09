@@ -9,23 +9,23 @@
      * Inicializa os formulários de doação
      */
     function initDonationForms() {
-        // Formulário de doação única
-        const singleDonationForm = document.getElementById('single-donation-form');
-        if (singleDonationForm) {
-            singleDonationForm.addEventListener('submit', function(e) {
+        // Todos os formulários de doação única
+        const singleForms = document.querySelectorAll('.single-donation-form');
+        singleForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                AsaasFormAjax.processDonationForm(this, 'Processando doação única...');
+                AsaasFormAjax.processDonationForm(form, 'Processando doação única...');
             });
-        }
+        });
         
-        // Formulário de doação recorrente
-        const recurringDonationForm = document.getElementById('recurring-donation-form');
-        if (recurringDonationForm) {
-            recurringDonationForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                AsaasFormAjax.processDonationForm(this, 'Processando assinatura...');
-            });
-        }
+           // Todos os formulários de doação recorrente
+           const recurringForms = document.querySelectorAll('.recurring-donation-form');
+           recurringForms.forEach(form => {
+               form.addEventListener('submit', function(e) {
+                   e.preventDefault();
+                   AsaasFormAjax.processDonationForm(form, 'Processando assinatura...');
+               });
+           });
     }
     
     /**
@@ -171,6 +171,32 @@
         }
     }
     
+    /**
+     * Extrai a mensagem de erro de uma resposta
+     * 
+     * @param {Object} response Resposta da API
+     * @return {string} Mensagem de erro extraída
+     */
+    function extractErrorMessage(response) {
+        let errorMessage = 'Ocorreu um erro ao processar sua doação.';
+        
+        if (response.data) {
+            if (response.data.errors) {
+                if (typeof response.data.errors === 'object' && !Array.isArray(response.data.errors)) {
+                    errorMessage = Object.values(response.data.errors).join('<br>');
+                } else if (Array.isArray(response.data.errors)) {
+                    errorMessage = response.data.errors.join('<br>');
+                } else {
+                    errorMessage = response.data.errors;
+                }
+            } else if (response.data.message) {
+                errorMessage = response.data.message;
+            }
+        }
+        
+        return errorMessage;
+    }
+    
     // Expor funções públicas
     window.AsaasFormUtils = {
         initDonationForms,
@@ -179,6 +205,7 @@
         getDataValue,
         formatDate,
         hideDonationSuccess,
-        copyPixCode
+        copyPixCode,
+        extractErrorMessage
     };
 })();

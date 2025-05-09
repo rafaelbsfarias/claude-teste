@@ -15,6 +15,14 @@ function asaas_enqueue_scripts() {
     wp_register_script('asaas-form-ajax', ASAAS_PLUGIN_URL . 'assets/frontend/js/form-ajax.js', ['asaas-form-utils'], false, true);
     wp_register_script('asaas-form-script', ASAAS_PLUGIN_URL . 'assets/frontend/js/form-script.js', ['asaas-form-utils', 'asaas-form-masks', 'asaas-form-ui', 'asaas-form-ajax'], false, true);
     
+    wp_register_script(
+        'asaas-form-masks',
+        plugins_url( 'assets/frontend/js/form-masks.js', __FILE__ ),
+        [],      // dependências (nenhuma ou ['jquery'])
+        '1.0.0',
+        true     // no footer
+    );
+
     // Enfileirar scripts
     wp_enqueue_script('asaas-form-utils');
     wp_enqueue_script('asaas-form-masks');
