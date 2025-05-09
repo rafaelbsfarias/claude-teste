@@ -4,7 +4,7 @@
     <br>
     <p>Preencha as informações abaixo para cadastrar uma doação mensal. Fique tranquilo, essa modalidade de doação não ocupa o limite do seu cartão de credito.</p>
 
-    <form id="recurring-donation-form">
+    <form class="recurring-donation-form" data-donation-type="recurring">
         <input type="hidden" name="action" value="process_donation">
         <input type="hidden" name="donation_type" value="<?php echo esc_attr($form_data['form_type']); ?>">
         
@@ -17,14 +17,14 @@
         <input type="email" id="email" name="email" maxlength="64" placeholder="Coloque seu e-mail aqui" required>
 
         <label for="cpf-cnpj">CPF ou CNPJ:</label>
-        <input type="text" id="cpf-cnpj" name="cpf_cnpj" maxlength="14" placeholder="Somente números" required>
+        <input type="text" class="cpf-cnpj" name="cpf_cnpj" maxlength="14" placeholder="Somente números" required>
 
         <label for="donation-value">Valor da Doação:</label>
         <input type="text" id="donation-value" name="donation_value" placeholder="Ex.: 50,00" required>
 
         <input type="hidden" name="payment_method" value="card">
         
-        <div id="card-fields">
+        <div class="card-fields">
             <label for="card-number">Número do Cartão:</label>
             <input type="text" id="card-number" name="card_number" maxlength="16" placeholder="Somente números" required>
 

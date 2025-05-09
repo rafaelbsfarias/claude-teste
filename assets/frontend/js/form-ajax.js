@@ -2,9 +2,60 @@
  * Funções para processamento AJAX e exibição de mensagens em formulários de doação
  */
 
-// Garante que esta seja uma biblioteca reutilizável
 (function() {
     'use strict';
+    
+    /**
+     * Acessores para dependências externas
+     * Centraliza todos os acessos a objetos globais em um único lugar
+     */
+    const deps = {
+        // Retorna o objeto ajax_object ou um objeto vazio com URL vazia
+        getAjax: function() {
+            return window.ajax_object || { ajax_url: '' };
+        },
+        
+        // Acessores para AsaasFormUI
+        ui: {
+            setButtonState: function(button, isLoading, text) {
+                if (window.AsaasFormUI && typeof AsaasFormUI.setSubmitButtonState === 'function') {
+                    return AsaasFormUI.setSubmitButtonState(button, isLoading, text);
+                }
+                return false;
+            },
+            
+            displaySuccess: function(form, data, donationType) {
+                if (window.AsaasFormUI && typeof AsaasFormUI.displaySuccess === 'function') {
+                    return AsaasFormUI.displaySuccess(form, data, donationType);
+                }
+                return false;
+            },
+            
+            displayMessage: function(form, message, type) {
+                if (window.AsaasFormUI && typeof AsaasFormUI.displayMessage === 'function') {
+                    return AsaasFormUI.displayMessage(form, message, type);
+                }
+                return false;
+            }
+        },
+        
+        // Acessores para AsaasFormUtils
+        utils: {
+            clearMessages: function(form) {
+                if (window.AsaasFormUtils && typeof AsaasFormUtils.clearMessages === 'function') {
+                    return AsaasFormUtils.clearMessages(form);
+                }
+                return false;
+            },
+            
+            extractErrorMessage: function(response) {
+                if (window.AsaasFormUtils && typeof AsaasFormUtils.extractErrorMessage === 'function') {
+                    return AsaasFormUtils.extractErrorMessage(response);
+                }
+                return 'Ocorreu um erro ao processar sua doação.';
+            }
+        }
+    };
     
     /**
      * Processa o envio do formulário de doação via AJAX
@@ -13,84 +64,94 @@
      * @param {string} loadingMessage Mensagem de carregamento
      */
     function processDonationForm(form, loadingMessage) {
-        // Adicionar mensagem de carregamento
+        // Botão de envio
         const submitButton = form.querySelector('button[type="submit"]');
         const originalButtonText = submitButton ? submitButton.textContent : 'Enviar';
         
-        if (submitButton) {
-            submitButton.textContent = loadingMessage;
-            submitButton.disabled = true;
-        }
-        
-        // Limpar mensagens anteriores
-        AsaasFormUtils.clearMessages(form);
+        // Controlar estado do botão e limpar mensagens
+        setButtonLoading(submitButton, true, loadingMessage);
+        clearFormMessages(form);
         
         // Obter todos os campos do formulário
         const formData = new FormData(form);
         
         try {
-            // Verificar se ajax_object existe
-            if (typeof ajax_object === 'undefined') {
-                throw new Error('ajax_object não está definido');
+            // Obter objeto ajax
+            const ajaxObj = deps.getAjax();
+            
+            // Verificar se ajax_url existe
+            if (!ajaxObj.ajax_url) {
+                throw new Error('ajax_url não está definido');
             }
             
             // Enviar para o backend via AJAX
-            fetch(ajax_object.ajax_url, {
+            fetch(ajaxObj.ajax_url, {
                 method: 'POST',
                 body: formData,
                 credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(response => {
                 // Restaurar o botão
-                if (submitButton) {
-                    submitButton.textContent = originalButtonText;
-                    submitButton.disabled = false;
-                }
+                setButtonLoading(submitButton, false, originalButtonText);
                 
                 if (response.success) {
-                    // Usar a mesma função de exibição de sucesso para ambos os tipos de doação
-                    const donationType = form.id === 'recurring-donation-form' ? 'recurring' : 'single';
+                    // Processar resposta de sucesso
+                    const donationType = form.getAttribute('data-donation-type') || 
+                                        (form.id === 'recurring-donation-form' ? 'recurring' : 'single');
                     showDonationSuccess(form, response.data, donationType);
                 } else {
-                    // Mostrar mensagem de erro
-                    let errorMessage = 'Ocorreu um erro ao processar sua doação.';
-                    
-                    if (response.data) {
-                        if (response.data.errors) {
-                            if (typeof response.data.errors === 'object') {
-                                errorMessage = Object.values(response.data.errors).join('<br>');
-                            } else {
-                                errorMessage = response.data.errors;
-                            }
-                        } else if (response.data.message) {
-                            errorMessage = response.data.message;
-                        }
-                    }
-                    
+                    // Processar resposta de erro
+                    const errorMessage = deps.utils.extractErrorMessage(response);
                     showMessage(form, errorMessage, 'error');
                 }
             })
             .catch(error => {
-                // Restaurar o botão
-                if (submitButton) {
-                    submitButton.textContent = originalButtonText;
-                    submitButton.disabled = false;
-                }
-                
-                // Mostrar mensagem de erro com rolagem automática
+                // Restaurar o botão e mostrar erro
+                setButtonLoading(submitButton, false, originalButtonText);
                 showMessage(form, 'Erro de conexão. Por favor, tente novamente.', 'error');
+                console.error('Erro na requisição AJAX:', error);
             });
         } catch (error) {
-            // Restaurar o botão
-            if (submitButton) {
-                submitButton.textContent = originalButtonText;
-                submitButton.disabled = false;
-            }
-            
-            // Mostrar mensagem de erro
+            // Restaurar o botão e mostrar erro
+            setButtonLoading(submitButton, false, originalButtonText);
             showMessage(form, 'Erro ao processar o formulário. Por favor, tente novamente.', 'error');
+            console.error('Erro ao configurar requisição:', error);
         }
+    }
+    
+    /**
+     * Altera o estado de carregamento do botão
+     * 
+     * @param {HTMLButtonElement} button O botão de envio
+     * @param {boolean} isLoading Se está carregando
+     * @param {string} text Texto a ser exibido
+     */
+    function setButtonLoading(button, isLoading, text) {
+        // Tenta usar a função da dependência
+        if (deps.ui.setButtonState(button, isLoading, text)) {
+            return; // Se a função existir e for executada, retorna
+        }
+        
+        // Fallback interno
+        if (button) {
+            button.textContent = text;
+            button.disabled = isLoading;
+        }
+    }
+    
+    /**
+     * Limpa mensagens do formulário
+     * 
+     * @param {HTMLFormElement} form O formulário
+     */
+    function clearFormMessages(form) {
+        deps.utils.clearMessages(form);
     }
     
     /**
@@ -101,172 +162,19 @@
      * @param {string} donationType Tipo de doação ('recurring' ou 'single')
      */
     function showDonationSuccess(form, data, donationType) {
-        // Ocultar elementos do formulário
+        // Tenta usar a função da dependência
+        if (deps.ui.displaySuccess(form, data, donationType)) {
+            return; // Se a função existir e for executada, retorna
+        }
+        
+        // Fallback interno
+        console.error('AsaasFormUI.displaySuccess não está disponível');
+        const successMessage = document.createElement('div');
+        successMessage.className = 'asaas-message asaas-message-success';
+        successMessage.innerHTML = '<h3>Doação realizada com sucesso!</h3><p>Obrigado por sua contribuição.</p>';
+        
         form.style.display = 'none';
-        AsaasFormUtils.clearMessages(form);
-        
-        // Ocultar também o título h2 e o parágrafo introdutório que estão fora do formulário
-        const formContainer = form.closest('.asaas-donation-form');
-        if (formContainer) {
-            Array.from(formContainer.children).forEach(child => {
-                if (child !== form && (child.tagName === 'H2' || child.tagName === 'P')) {
-                    child.style.display = 'none';
-                }
-            });
-        }
-        
-        // Verificar se os dados estão aninhados (comum em respostas de API)
-        const responseData = data.data || data;
-        
-        // Obter dados da resposta
-        let value = AsaasFormUtils.getDataValue(responseData, ['value', 'donation_value']);
-        let formattedValue = AsaasFormUtils.formatCurrencyValue(value);
-        let paymentMethod = responseData.payment_method || '';
-        
-        // Cria o elemento de mensagem de sucesso
-        const successDiv = document.createElement('div');
-        successDiv.className = 'donation-success-container';
-        
-        // Verifica se é um pagamento via boleto
-        if (donationType === 'single' && paymentMethod === 'boleto') {
-            // Dados específicos do boleto
-            let dueDate = AsaasFormUtils.getDataValue(responseData, ['due_date', 'dueDate']);
-            dueDate = AsaasFormUtils.formatDate(dueDate);
-            
-            let bankSlipUrl = responseData.bank_slip_url || '';
-            let invoiceUrl = responseData.invoice_url || '';
-            let boletoNumber = AsaasFormUtils.getDataValue(responseData, ['nossoNumero'], '');
-            
-            // HTML para página de sucesso do boleto
-            let html = `
-                <div class="boleto-success">
-                    <h2 class="success-title">Doação Realizada com Sucesso!</h2>
-                    <div class="boleto-info">
-                        <div class="info-row">
-                            <span class="info-label">Valor:</span>
-                            <span class="info-value">R$ ${formattedValue}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Vencimento:</span>
-                            <span class="info-value">${dueDate}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Número do Boleto:</span>
-                            <span class="info-value">${boletoNumber}</span>
-                        </div>
-                    </div>
-                    <div class="boleto-actions">
-                        <a href="${bankSlipUrl}" target="_blank" class="btn btn-download">Baixar Boleto</a>
-                        <a href="${invoiceUrl}" target="_blank" class="btn btn-invoice">Visualizar Fatura</a>
-                    </div>
-                    <button class="btn btn-close" onclick="AsaasFormUtils.hideDonationSuccess(this)">Fechar</button>
-                </div>
-            `;
-            
-            successDiv.innerHTML = html;
-        } else if (donationType === 'single' && paymentMethod === 'pix') {
-            // Dados específicos do PIX
-            let pixCode = responseData.pix_code || '';
-            let pixText = responseData.pix_text || '';
-            
-            // HTML para página de sucesso do PIX - layout atualizado
-            let html = `
-                <div class="pix-success">
-                    <h2 class="success-title">Doação via PIX Gerada com Sucesso!</h2>
-                    <div class="pix-info">
-                        <div class="info-row">
-                            <span class="info-label">Valor:</span>
-                            <span class="info-value">R$ ${formattedValue}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="pix-qrcode">
-                        <img src="data:image/png;base64,${pixCode}" alt="QR Code PIX">
-                    </div>
-                    
-                    <textarea id="pix-code-text" class="pix-code-text" readonly>${pixText}</textarea>
-                    
-                    <button class="btn btn-copy-wide" onclick="AsaasFormUtils.copyPixCode()">Copiar</button>
-                </div>
-            `;
-            
-            successDiv.innerHTML = html;
-        } else if (donationType === 'recurring') {
-            // Código existente para doação recorrente...
-            let nextDueDate = AsaasFormUtils.getDataValue(responseData, ['nextDueDate', 'next_due_date']);
-            let status = AsaasFormUtils.getDataValue(responseData, ['status', 'subscription_status']);
-            
-            // Traduzir o status se for "ACTIVE"
-            if (status && status.toUpperCase() === 'ACTIVE') {
-                status = 'Ativa';
-            }
-            
-            // Formatar data para padrão brasileiro
-            nextDueDate = AsaasFormUtils.formatDate(nextDueDate);
-            
-            let html = `
-                <h2>Doação mensal cadastrada com sucesso!</h2>
-                <div class="donation-info">
-                    <p><strong>Valor mensal:</strong> R$ ${formattedValue}</p>
-                    <p><strong>Próxima cobrança:</strong> ${nextDueDate}</p>
-                    <p><strong>Situação:</strong> ${status}</p>
-                </div>
-                <div class="thank-you-message">
-                    <h3>Obrigado por sua generosidade!</h3>
-                    <p>Sua contribuição é muito importante para nossa causa.</p>
-                    <p>A doação será cobrada automaticamente todos os meses, sem ocupar seu limite no cartão de crédito.</p>
-                </div>
-            `;
-            
-            successDiv.innerHTML = html;
-        } else {
-            // Código para outros tipos de doação única...
-            let paymentStatus = AsaasFormUtils.getDataValue(responseData, ['payment_status', 'status']);
-            let bankSlipUrl = responseData.bank_slip_url || null;
-            let invoiceUrl = responseData.invoice_url || null;
-            
-            // Traduzir status comuns do inglês
-            if (paymentStatus && paymentStatus.toUpperCase() === 'CONFIRMED') {
-                paymentStatus = 'Confirmado';
-            } else if (paymentStatus && paymentStatus.toUpperCase() === 'PENDING') {
-                paymentStatus = 'Pendente';
-            }
-            
-            let html = `
-                <h2>Doação realizada com sucesso!</h2>
-                <div class="donation-info">
-                    <p><strong>Valor doado:</strong> R$ ${formattedValue}</p>
-                    <p><strong>Situação:</strong> ${paymentStatus}</p>
-                </div>`;
-            
-            // Adicionar link do boleto se disponível
-            if (bankSlipUrl) {
-                html += `
-                    <div class="payment-actions">
-                        <p>Clique no botão abaixo para visualizar e imprimir o boleto:</p>
-                        <a href="${bankSlipUrl}" target="_blank" class="button button-primary">Visualizar Boleto</a>
-                    </div>`;
-            }
-            
-            // Adicionar link da fatura se disponível
-            if (invoiceUrl) {
-                html += `
-                    <div class="invoice-link">
-                        <p>Você também pode <a href="${invoiceUrl}" target="_blank">acessar a fatura online</a>.</p>
-                    </div>`;
-            }
-            
-            html += `
-                <div class="thank-you-message">
-                    <h3>Obrigado por sua generosidade!</h3>
-                    <p>Sua contribuição é muito importante para nossa causa.</p>
-                </div>
-            `;
-            
-            successDiv.innerHTML = html;
-        }
-        
-        form.parentNode.insertBefore(successDiv, form);
+        form.parentNode.insertBefore(successMessage, form);
     }
     
     /**
@@ -277,37 +185,83 @@
      * @param {string} type Tipo da mensagem ('success' ou 'error')
      */
     function showMessage(form, message, type) {
-        // Limpar mensagens anteriores para evitar duplicação
-        AsaasFormUtils.clearMessages(form);
-        
-        // Criar o elemento de mensagem
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `asaas-message asaas-message-${type}`;
-        messageDiv.innerHTML = message;
-        
-        // Adicionar ID único para a mensagem de erro (para referência de rolagem)
-        if (type === 'error') {
-            messageDiv.id = 'asaas-error-message';
+        // Tenta usar a função da dependência
+        if (deps.ui.displayMessage(form, message, type)) {
+            return; // Se a função existir e for executada, retorna
         }
         
-        // Inserir a mensagem antes do formulário
-        form.parentNode.insertBefore(messageDiv, form);
-        
-        // Se for mensagem de erro, rolar até ela
-        if (type === 'error') {
-            setTimeout(() => {
-                messageDiv.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-            }, 100);
-        }
+        // Fallback interno
+        console.error('AsaasFormUI.displayMessage não está disponível');
+        alert(message);
     }
     
-    // Expor funções públicas
+    // Expor funções públicas - mantém a API original
     window.AsaasFormAjax = {
         processDonationForm,
         showMessage,
         showDonationSuccess
+    };
+    
+    /**
+     * Factory function para criar uma instância com dependências customizadas
+     * Esta função NÃO altera o comportamento padrão, apenas adiciona uma opção
+     * para criar instâncias personalizadas
+     */
+    window.createAsaasFormAjax = function(customDeps) {
+        // Criar uma cópia das dependências padrão
+        const newDeps = {
+            getAjax: function() {
+                return customDeps && customDeps.ajax ? customDeps.ajax : deps.getAjax();
+            },
+            ui: {
+                setButtonState: function(button, isLoading, text) {
+                    if (customDeps && customDeps.ui && typeof customDeps.ui.setSubmitButtonState === 'function') {
+                        return customDeps.ui.setSubmitButtonState(button, isLoading, text);
+                    }
+                    return deps.ui.setButtonState(button, isLoading, text);
+                },
+                displaySuccess: function(form, data, donationType) {
+                    if (customDeps && customDeps.ui && typeof customDeps.ui.displaySuccess === 'function') {
+                        return customDeps.ui.displaySuccess(form, data, donationType);
+                    }
+                    return deps.ui.displaySuccess(form, data, donationType);
+                },
+                displayMessage: function(form, message, type) {
+                    if (customDeps && customDeps.ui && typeof customDeps.ui.displayMessage === 'function') {
+                        return customDeps.ui.displayMessage(form, message, type);
+                    }
+                    return deps.ui.displayMessage(form, message, type);
+                }
+            },
+            utils: {
+                clearMessages: function(form) {
+                    if (customDeps && customDeps.utils && typeof customDeps.utils.clearMessages === 'function') {
+                        return customDeps.utils.clearMessages(form);
+                    }
+                    return deps.utils.clearMessages(form);
+                },
+                extractErrorMessage: function(response) {
+                    if (customDeps && customDeps.utils && typeof customDeps.utils.extractErrorMessage === 'function') {
+                        return customDeps.utils.extractErrorMessage(response);
+                    }
+                    return deps.utils.extractErrorMessage(response);
+                }
+            }
+        };
+        
+        // Retornar as funções com acesso ao novo objeto de dependências
+        return {
+            processDonationForm: function(form, loadingMessage) {
+                // Esta implementação apenas redireciona para a função original,
+                // mas em uma versão futura poderia usar as dependências personalizadas
+                return processDonationForm(form, loadingMessage);
+            },
+            showMessage: function(form, message, type) {
+                return showMessage(form, message, type);
+            },
+            showDonationSuccess: function(form, data, donationType) {
+                return showDonationSuccess(form, data, donationType);
+            }
+        };
     };
 })();

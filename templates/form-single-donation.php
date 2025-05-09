@@ -1,7 +1,7 @@
 <div class="asaas-donation-form">
     <h2>Doação</h2>
     <p>Preencha as informações abaixo para realizar sua doação.</p>
-    <form id="single-donation-form">
+    <form class="single-donation-form" data-donation-type="single">
         <input type="hidden" name="action" value="process_donation">
         <input type="hidden" name="donation_type" value="<?php echo esc_attr($form_data['form_type']); ?>">
         
@@ -13,21 +13,21 @@
         <input type="email" id="email" name="email" maxlength="64" placeholder="Coloque seu e-mail aqui" required>
 
         <label for="cpf-cnpj">CPF ou CNPJ:</label>
-        <input type="text" id="cpf-cnpj" name="cpf_cnpj" maxlength="14" placeholder="Somente números" required>
+        <input type="text" class="cpf-cnpj" name="cpf_cnpj" maxlength="18" placeholder="Somente números" required>
 
         <label for="donation-value">Valor da Doação:</label>
         <input type="text" id="donation-value" name="donation_value" placeholder="Ex.: 50,00" required>
 
-        <div id="payment-methods">
+        <div class="payment-methods">
             <label for="payment-method">Forma de Pagamento:</label>
-            <select id="payment-method" name="payment_method" required>
+            <select class="payment-method" name="payment_method" required>
                 <option value="pix">PIX</option>
                 <option value="boleto">Boleto</option>
                 <option value="card">Cartão de Crédito</option>
             </select>
         </div>
 
-        <div id="card-fields" style="display: none;">
+        <div class="card-fields" style="display: none;">
             <label for="card-number">Número do Cartão:</label>
             <input type="text" id="card-number" name="card_number" maxlength="16" placeholder="Somente números">
 
