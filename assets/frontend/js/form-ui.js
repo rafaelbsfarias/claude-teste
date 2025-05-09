@@ -4,75 +4,57 @@
 
 (function() {
     'use strict';
-    ////////////////////////////////////////
-
-
-
-    (function() {
-        'use strict';
-      
+    
+    // Garantir que o objeto AsaasFormUI existe
+    window.AsaasFormUI = window.AsaasFormUI || {};
+    
+    /**
+     * Implementação do PaymentMethodToggler
+     */
+    class PaymentMethodToggler {
         /**
-         * @class PaymentMethodToggler
-         * Encapsula a lógica de mostrar/esconder campos de cartão e de required.
+         * @param {HTMLFormElement} formElement
          */
-        class PaymentMethodToggler {
-          /**
-           * @param {HTMLFormElement} formElement
-           */
-          constructor(formElement) {
+        constructor(formElement) {
             this.form = formElement;
             this.select = this.form.querySelector('.payment-method');
             this.cardContainer = this.form.querySelector('.card-fields');
-          }
-      
-          init() {
+        }
+    
+        init() {
             if (!this.select || !this.cardContainer) return;
             this._toggle(this.select.value);
             this.select.addEventListener('change', () => {
-              this._toggle(this.select.value);
+                this._toggle(this.select.value);
             });
-          }
-      
-          /**
-           * @param {string} paymentMethod
-           * @private
-           */
-          _toggle(paymentMethod) {
+        }
+    
+        /**
+         * @param {string} paymentMethod
+         * @private
+         */
+        _toggle(paymentMethod) {
             const show = paymentMethod === 'card';
             this.cardContainer.style.display = show ? '' : 'none';
             this.cardContainer
-              .querySelectorAll('input')
-              .forEach(input => {
-                if (show) input.setAttribute('required', '');
-                else     input.removeAttribute('required');
-              });
-          }
+                .querySelectorAll('input')
+                .forEach(input => {
+                    if (show) input.setAttribute('required', '');
+                    else     input.removeAttribute('required');
+                });
         }
-      
-        /**
-         * @class FormUIController
-         * Encontra todos os formulários e aplica o PaymentMethodToggler
-         */
-        class FormUIController {
-          static init() {
+    }
+    
+    /**
+     * Implementação do controller de UI
+     */
+    class FormUIController {
+        static init() {
             // selecione ambos single e recurring (ajuste os seletores ao seu HTML)
             const forms = Array.from(document.querySelectorAll('.single-donation-form, .recurring-donation-form'));
             forms.forEach(form => new PaymentMethodToggler(form).init());
-          }
         }
-      
-        // exporta apenas o método que o form-script.js espera
-        window.AsaasFormUI = window.AsaasFormUI || {};
-        window.AsaasFormUI.setupPaymentMethodToggles = FormUIController.init;
-      
-        // — aqui continuam as outras funções (displaySuccess, etc.) —
-      })();
-      
-
-
-
-
-    //////////////////////////////////////
+    }
     
     /**
      * Exibe uma mensagem no formulário
@@ -315,12 +297,11 @@
         }
     }
     
-    // Expor funções públicas
-    window.AsaasFormUI = {
-        setupPaymentMethodToggles,
-        toggleCardFields,
-        displayMessage,
-        displaySuccess,
-        setSubmitButtonState
-    };
+    // Estender o objeto AsaasFormUI com todas as funções (em vez de sobrescrevê-lo)
+    Object.assign(window.AsaasFormUI, {
+        setupPaymentMethodToggles: FormUIController.init,
+        displayMessage: displayMessage,
+        displaySuccess: displaySuccess,
+        setSubmitButtonState: setSubmitButtonState
+    });
 })();
